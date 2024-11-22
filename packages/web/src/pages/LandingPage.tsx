@@ -305,7 +305,7 @@ const LandingPage: React.FC = () => {
             sub="Knowledge Base"
             onClickDemo={demoRagKnowledgeBase}
             icon={<PiChatCircleText />}
-            description="RAG (Retrieval Augmented Generation) は、情報の検索と LLM の文章生成を組み合わせる手法のことで、効果的な情報アクセスを実現できます。Knowledge Base の Hybrid Search を利用して参考ドキュメントを取得し、LLM が回答を生成します。"
+            description="RAG (Retrieval Augmented Generation) は、情報の検索と LLM の文章生成を組み合わせる手法のことで、効果的な情報アクセスを実現できます。Knowledge Base の Semantic Search を利用して参考ドキュメントを取得し、LLM が回答を生成します。"
           />
         )}
         {agentEnabled && (

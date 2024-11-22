@@ -88,10 +88,6 @@ context の `ragKnowledgeBaseEnabled` に `true` を指定します。(デフォ
 }
 ```
 
-`ragKnowledgeBaseStandbyReplicas` は自動作成される OpenSearch Serverless の冗長化に関する値です。
-- `false` : 開発およびテスト目的に適した指定。シングル AZ で稼働し、OCU のコストを半分にできる。
-- `true` : 本番環境に適した設定。複数の AZ で稼働し、高可用性な構成が実現できる。
-
 `embeddingModelId` は embedding に利用するモデルです。現状、以下モデルをサポートしています。
 
 ```
@@ -101,10 +97,12 @@ context の `ragKnowledgeBaseEnabled` に `true` を指定します。(デフォ
 "cohere.embed-english-v3"
 ```
 
-変更後に `npm run cdk:deploy` で再度デプロイして反映させます。この際、`cdk.json` の `modelRegion` で指定されているリージョンに Knowledge Base がデプロイされます。以下に注意してください。
+ベクトルデータベース には `Pinecone` を使用しています。 
+
+変更後に `npm -w packages/cdk run -- cdk deploy --require-approval never -c credentialsSecretArn=CREDENTIALS_SECRET_ARN -c ConnectionString=PINECONE_API_ENDPOINT --all` で再度デプロイして反映させます。この際、`cdk.json` の `modelRegion` で指定されているリージョンに Knowledge Base がデプロイされます。以下に注意してください。
 
 - `modelRegion` リージョンの Bedrock で `embeddingModelId` のモデルが有効化されている必要があります。
-- `modelRegion` リージョンで `npm run cdk:deploy` の前に AWS CDK の Bootstrap が完了している必要があります。
+- `modelRegion` リージョンで `npm -w packages/cdk run -- cdk deploy --require-approval never -c credentialsSecretArn=CREDENTIALS_SECRET_ARN -c ConnectionString=PINECONE_API_ENDPOINT --all` の前に AWS CDK の Bootstrap が完了している必要があります。
 
 ```bash
 # 以下はBootstrap するコマンドの例 (modelRegion が us-east-1 だとした場合)
@@ -164,13 +162,13 @@ chunkingConfiguration: {
 },
 ```
 
-その後、[Knowledge Base や OpenSearch Service を再作成して変更を加える](./DEPLOY_OPTION.md#knowledge-base-や-opensearch-service-を再作成して変更を加える)の章を参照して、変更を加えます。
+その後、[Knowledge Base を再作成して変更を加える](./DEPLOY_OPTION.md#Knowledge Base を再作成して変更を加える)の章を参照して、変更を加えます。
 
 
 
-#### Knowledge Base や OpenSearch Service を再作成して変更を加える
+#### Knowledge Base を再作成して変更を加える
 
-[Knowledge Base のチャンク戦略](./DEPLOY_OPTION.md#チャンク戦略を変更)や、OpenSearch Service に関する以下の `cdk.json` パラメーターについて、変更を加えた後に `npm run cdk:deploy` を実行しても変更が反映されません。
+[Knowledge Base のチャンク戦略](./DEPLOY_OPTION.md#チャンク戦略を変更)について、変更を加えた後に `npm run cdk:deploy` を実行しても変更が反映されません。
 
 - `embeddingModelId`
 - `ragKnowledgeBaseStandbyReplicas`
@@ -189,20 +187,6 @@ chunkingConfiguration: {
 RagKnowledgeBaseStack の削除に伴い、**RAG チャット用の S3 バケットや格納されている RAG 用のファイルが削除**されます。
 S3 バケット内にアップロードした RAG 用のファイルが存在する場合は、退避したあとに再度アップロードしてください。
 また、前述した手順に従い Data source を再度 Sync してください。
-
-#### OpenSearch Service の Index をマネージメントコンソールで確認する方法
-
-デフォルトでは、マネージメントコンソールから OpenSearch Service の Indexes タブを開くと `User does not have permissions for the requested resource` というエラーが表示されます。
-これは、Data access policy でマネージメントコンソールにログインしている IAM ユーザーを許可していないためです。
-以下の手順に従い、必要な権限を手動で追加してください。
-
-1. [OpenSearch Service](https://console.aws.amazon.com/aos/home?#opensearch/collections) (リージョンに注意) を開き、generative-ai-use-cases-jp をクリック
-1. ページ下部 Data access の Associated policy である generative-ai-use-cases-jp をクリック
-1. 右上の Edit をクリック
-1. ページ中部の Select principals の Add principals をクリックし、IAM User/Role 等 (マネージメントコンソールにログインしている権限) を追加
-1. Save
-
-保存後、少し時間をおいて再度アクセスしてください。
 
 ### Agent チャットユースケースの有効化
 
