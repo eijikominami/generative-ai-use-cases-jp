@@ -23,6 +23,7 @@ import RagPage from './pages/RagPage';
 import RagKnowledgeBasePage from './pages/RagKnowledgeBasePage';
 import WebContent from './pages/WebContent';
 import GenerateImagePage from './pages/GenerateImagePage';
+import OptimizePromptPage from './pages/OptimizePromptPage';
 import TranscribePage from './pages/TranscribePage';
 import AgentChatPage from './pages/AgentChatPage.tsx';
 import PromptFlowChatPage from './pages/PromptFlowChatPage';
@@ -34,6 +35,7 @@ import UseCaseBuilderRoot from './UseCaseBuilderRoot.tsx';
 import UseCaseBuilderExecutePage from './pages/useCaseBuilder/UseCaseBuilderExecutePage.tsx';
 import UseCaseBuilderSamplesPage from './pages/useCaseBuilder/UseCaseBuilderSamplesPage.tsx';
 import UseCaseBuilderMyUseCasePage from './pages/useCaseBuilder/UseCaseBuilderMyUseCasePage.tsx';
+import { optimizePromptEnabled } from './hooks/useOptimizePrompt';
 
 const ragEnabled: boolean = import.meta.env.VITE_APP_RAG_ENABLED === 'true';
 const ragKnowledgeBaseEnabled: boolean =
@@ -41,8 +43,7 @@ const ragKnowledgeBaseEnabled: boolean =
 const samlAuthEnabled: boolean =
   import.meta.env.VITE_APP_SAMLAUTH_ENABLED === 'true';
 const agentEnabled: boolean = import.meta.env.VITE_APP_AGENT_ENABLED === 'true';
-const { multiModalModelIds } = MODELS;
-const multiModalEnabled: boolean = multiModalModelIds.length > 0;
+const { visionEnabled } = MODELS;
 const useCaseBuilderEnabled: boolean =
   import.meta.env.VITE_APP_USE_CASE_BUILDER_ENABLED === 'true';
 
@@ -91,6 +92,12 @@ const routes: RouteObject[] = [
     path: '/image',
     element: <GenerateImagePage />,
   },
+  optimizePromptEnabled
+    ? {
+        path: '/optimize',
+        element: <OptimizePromptPage />,
+      }
+    : null,
   {
     path: '/transcribe',
     element: <TranscribePage />,
@@ -99,7 +106,7 @@ const routes: RouteObject[] = [
     path: '/prompt-flow-chat',
     element: <PromptFlowChatPage />,
   },
-  multiModalEnabled
+  visionEnabled
     ? {
         path: '/video',
         element: <VideoAnalyzerPage />,

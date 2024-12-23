@@ -27,26 +27,28 @@ import useFiles from '../hooks/useFiles';
 import { FileLimit, SystemContext } from 'generative-ai-use-cases-jp';
 
 const fileLimit: FileLimit = {
-  accept: [
-    '.csv',
-    '.doc',
-    '.docx',
-    '.html',
-    '.md',
-    '.pdf',
-    '.txt',
-    '.xls',
-    '.xlsx',
-    '.gif',
-    '.jpg',
-    '.jpeg',
-    '.png',
-    '.webp',
-  ],
+  accept: {
+    doc: [
+      '.csv',
+      '.doc',
+      '.docx',
+      '.html',
+      '.md',
+      '.pdf',
+      '.txt',
+      '.xls',
+      '.xlsx',
+      '.gif',
+    ],
+    image: ['.jpg', '.jpeg', '.png', '.webp'],
+    video: ['.mkv', '.mov', '.mp4', '.webm'],
+  },
   maxFileCount: 5,
   maxFileSizeMB: 4.5,
   maxImageFileCount: 20,
   maxImageFileSizeMB: 3.75,
+  maxVideoFileCount: 1,
+  maxVideoFileSizeMB: 1000, // 1 GB for S3 input
 };
 
 type StateType = {
@@ -155,9 +157,18 @@ const ChatPage: React.FC = () => {
     }
   }, [chatId, getChatTitle]);
 
-  const fileUpload = useMemo(() => {
-    return MODELS.multiModalModelIds.includes(modelId);
+  const accept = useMemo(() => {
+    if (!modelId) return [];
+    const feature = MODELS.modelFeatureFlags[modelId];
+    return [
+      ...(feature.doc ? fileLimit.accept.doc : []),
+      ...(feature.image ? fileLimit.accept.image : []),
+      ...(feature.video ? fileLimit.accept.video : []),
+    ];
   }, [modelId]);
+  const fileUpload = useMemo(() => {
+    return accept.length > 0;
+  }, [accept]);
 
   useEffect(() => {
     const _modelId = !modelId ? availableModels[0] : modelId;
@@ -348,7 +359,7 @@ const ChatPage: React.FC = () => {
     setIsOver(false);
     if (event.dataTransfer.files) {
       // ファイルを反映しアップロード
-      uploadFiles(Array.from(event.dataTransfer.files), fileLimit);
+      uploadFiles(Array.from(event.dataTransfer.files), fileLimit, accept);
     }
   };
 
@@ -492,6 +503,7 @@ const ChatPage: React.FC = () => {
             onReset={onReset}
             fileUpload={fileUpload}
             fileLimit={fileLimit}
+            accept={accept}
           />
         </div>
       </div>

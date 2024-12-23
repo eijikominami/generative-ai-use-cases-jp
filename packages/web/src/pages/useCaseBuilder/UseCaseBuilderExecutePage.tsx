@@ -108,6 +108,8 @@ const UseCaseBuilderExecutePage: React.FC = () => {
               promptTemplate={useCase?.promptTemplate ?? ''}
               description={useCase?.description}
               inputExamples={useCase?.inputExamples}
+              fixedModelId={useCase?.fixedModelId ?? ''}
+              fileUpload={!!useCase?.fileUpload}
               isShared={useCase?.isShared ?? false}
               isFavorite={useCase?.isFavorite ?? false}
               useCaseId={useCaseId ?? ''}

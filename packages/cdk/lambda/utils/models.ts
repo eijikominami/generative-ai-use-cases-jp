@@ -4,7 +4,7 @@ import {
   Model,
   PromptTemplate,
   StableDiffusionParams,
-  TitanImageParams,
+  AmazonImageParams,
   UnrecordedMessage,
   ConverseInferenceParams,
   UsecaseConverseInferenceParams,
@@ -115,6 +115,12 @@ const COMMANDR_DEFAULT_PARAMS: ConverseInferenceParams = {
   topP: 0.75,
 };
 
+const NOVA_DEFAULT_PARAMS: ConverseInferenceParams = {
+  maxTokens: 5120,
+  temperature: 0.7,
+  topP: 0.9,
+};
+
 const USECASE_DEFAULT_PARAMS: UsecaseConverseInferenceParams = {
   '/rag': {
     temperature: 0.0,
@@ -210,6 +216,26 @@ const createConverseCommandInput = (
               },
             },
           } as ContentBlock.DocumentMember);
+        } else if (extra.type === 'video' && extra.source.type === 'base64') {
+          contentBlocks.push({
+            video: {
+              format: extra.source.mediaType.split('/')[1],
+              source: {
+                bytes: Buffer.from(extra.source.data, 'base64'),
+              },
+            },
+          } as ContentBlock.VideoMember);
+        } else if (extra.type === 'video' && extra.source.type === 's3') {
+          contentBlocks.push({
+            video: {
+              format: extra.source.mediaType.split('/')[1],
+              source: {
+                s3Location: {
+                  uri: extra.source.data,
+                },
+              },
+            },
+          } as ContentBlock.VideoMember);
         }
       });
     }
@@ -429,7 +455,7 @@ const createBodyImageStabilityAI2024Model = (params: GenerateImageParams) => {
   return JSON.stringify(body);
 };
 
-const createBodyImageTitanImage = (params: GenerateImageParams) => {
+const createBodyImageAmazonImage = (params: GenerateImageParams) => {
   // TODO: Support inpainting and outpainting too
   const imageGenerationConfig = {
     numberOfImages: 1,
@@ -439,7 +465,7 @@ const createBodyImageTitanImage = (params: GenerateImageParams) => {
     cfgScale: params.cfgScale,
     seed: params.seed % 214783648, // max for titan image
   };
-  let body: Partial<TitanImageParams> = {};
+  let body: Partial<AmazonImageParams> = {};
   if (params.initImage && params.maskMode === undefined) {
     body = {
       taskType: 'IMAGE_VARIATION',
@@ -537,13 +563,13 @@ const extractOutputImageStabilityAI2024Model = (
   }
 };
 
-const extractOutputImageTitanImage = (
+const extractOutputImageAmazonImage = (
   response: BedrockImageGenerationResponse | StabilityAI2024ModelResponse
 ) => {
   if ('images' in response) {
     return response.images[0];
   } else {
-    throw new Error('Unexpected response type for Titan Image');
+    throw new Error('Unexpected response type for Amazon Image');
   }
 };
 // テキスト生成に関する、各のModel のパラメーターや関数の定義
@@ -886,6 +912,55 @@ export const BEDROCK_TEXT_GEN_MODELS: {
     extractConverseOutputText: extractConverseOutputText,
     extractConverseStreamOutputText: extractConverseStreamOutputText,
   },
+
+  'amazon.nova-pro-v1:0': {
+    defaultParams: NOVA_DEFAULT_PARAMS,
+    usecaseParams: USECASE_DEFAULT_PARAMS,
+    createConverseCommandInput: createConverseCommandInput,
+    createConverseStreamCommandInput: createConverseStreamCommandInput,
+    extractConverseOutputText: extractConverseOutputText,
+    extractConverseStreamOutputText: extractConverseStreamOutputText,
+  },
+  'amazon.nova-lite-v1:0': {
+    defaultParams: NOVA_DEFAULT_PARAMS,
+    usecaseParams: USECASE_DEFAULT_PARAMS,
+    createConverseCommandInput: createConverseCommandInput,
+    createConverseStreamCommandInput: createConverseStreamCommandInput,
+    extractConverseOutputText: extractConverseOutputText,
+    extractConverseStreamOutputText: extractConverseStreamOutputText,
+  },
+  'amazon.nova-micro-v1:0': {
+    defaultParams: NOVA_DEFAULT_PARAMS,
+    usecaseParams: USECASE_DEFAULT_PARAMS,
+    createConverseCommandInput: createConverseCommandInput,
+    createConverseStreamCommandInput: createConverseStreamCommandInput,
+    extractConverseOutputText: extractConverseOutputText,
+    extractConverseStreamOutputText: extractConverseStreamOutputText,
+  },
+  'us.amazon.nova-pro-v1:0': {
+    defaultParams: NOVA_DEFAULT_PARAMS,
+    usecaseParams: USECASE_DEFAULT_PARAMS,
+    createConverseCommandInput: createConverseCommandInput,
+    createConverseStreamCommandInput: createConverseStreamCommandInput,
+    extractConverseOutputText: extractConverseOutputText,
+    extractConverseStreamOutputText: extractConverseStreamOutputText,
+  },
+  'us.amazon.nova-lite-v1:0': {
+    defaultParams: NOVA_DEFAULT_PARAMS,
+    usecaseParams: USECASE_DEFAULT_PARAMS,
+    createConverseCommandInput: createConverseCommandInput,
+    createConverseStreamCommandInput: createConverseStreamCommandInput,
+    extractConverseOutputText: extractConverseOutputText,
+    extractConverseStreamOutputText: extractConverseStreamOutputText,
+  },
+  'us.amazon.nova-micro-v1:0': {
+    defaultParams: NOVA_DEFAULT_PARAMS,
+    usecaseParams: USECASE_DEFAULT_PARAMS,
+    createConverseCommandInput: createConverseCommandInput,
+    createConverseStreamCommandInput: createConverseStreamCommandInput,
+    extractConverseOutputText: extractConverseOutputText,
+    extractConverseStreamOutputText: extractConverseStreamOutputText,
+  },
 };
 
 // 画像生成に関する、各のModel のパラメーターや関数の定義
@@ -915,12 +990,16 @@ export const BEDROCK_IMAGE_GEN_MODELS: {
     extractOutputImage: extractOutputImageStabilityAI2024Model,
   },
   'amazon.titan-image-generator-v1': {
-    createBodyImage: createBodyImageTitanImage,
-    extractOutputImage: extractOutputImageTitanImage,
+    createBodyImage: createBodyImageAmazonImage,
+    extractOutputImage: extractOutputImageAmazonImage,
   },
   'amazon.titan-image-generator-v2:0': {
-    createBodyImage: createBodyImageTitanImage,
-    extractOutputImage: extractOutputImageTitanImage,
+    createBodyImage: createBodyImageAmazonImage,
+    extractOutputImage: extractOutputImageAmazonImage,
+  },
+  'amazon.nova-canvas-v1:0': {
+    createBodyImage: createBodyImageAmazonImage,
+    extractOutputImage: extractOutputImageAmazonImage,
   },
 };
 

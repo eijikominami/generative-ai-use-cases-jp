@@ -18,6 +18,7 @@ import {
   PiRobot,
   PiVideoCamera,
   PiFlowArrow,
+  PiMagicWand,
 } from 'react-icons/pi';
 import { Outlet } from 'react-router-dom';
 import Drawer, { ItemProps } from './components/Drawer';
@@ -29,13 +30,13 @@ import PopupInterUseCasesDemo from './components/PopupInterUseCasesDemo';
 import useInterUseCases from './hooks/useInterUseCases';
 import { MODELS } from './hooks/useModel';
 import useScreen from './hooks/useScreen';
+import { optimizePromptEnabled } from './hooks/useOptimizePrompt';
 
 const ragEnabled: boolean = import.meta.env.VITE_APP_RAG_ENABLED === 'true';
 const ragKnowledgeBaseEnabled: boolean =
   import.meta.env.VITE_APP_RAG_KNOWLEDGE_BASE_ENABLED === 'true';
 const agentEnabled: boolean = import.meta.env.VITE_APP_AGENT_ENABLED === 'true';
-const { multiModalModelIds } = MODELS;
-const multiModalEnabled: boolean = multiModalModelIds.length > 0;
+const { visionEnabled } = MODELS;
 const getPromptFlows = () => {
   try {
     return JSON.parse(import.meta.env.VITE_APP_PROMPT_FLOWS);
@@ -135,7 +136,7 @@ const items: ItemProps[] = [
     icon: <PiImages />,
     display: 'usecase' as const,
   },
-  multiModalEnabled
+  visionEnabled
     ? {
         label: '映像分析',
         to: '/video',
@@ -149,6 +150,14 @@ const items: ItemProps[] = [
     icon: <PiSpeakerHighBold />,
     display: 'tool' as const,
   },
+  optimizePromptEnabled
+    ? {
+        label: 'プロンプト最適化',
+        to: '/optimize',
+        icon: <PiMagicWand />,
+        display: 'tool' as const,
+      }
+    : null,
   ragEnabled
     ? {
         label: 'Kendra 検索',

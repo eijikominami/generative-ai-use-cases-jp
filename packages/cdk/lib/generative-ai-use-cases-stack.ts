@@ -153,11 +153,11 @@ export class GenerativeAiUseCasesStack extends Stack {
       agentEnabled,
       promptFlows,
       promptFlowStreamFunctionArn: api.invokePromptFlowFunction.functionArn,
+      optimizePromptFunctionArn: api.optimizePromptFunction.functionArn,
       selfSignUpEnabled,
       webAclId: props.webAclId,
       modelRegion: api.modelRegion,
       modelIds: api.modelIds,
-      multiModalModelIds: api.multiModalModelIds,
       imageGenerationModelIds: api.imageGenerationModelIds,
       endpointNames: api.endpointNames,
       samlAuthEnabled,
@@ -240,6 +240,10 @@ export class GenerativeAiUseCasesStack extends Stack {
       value: api.predictStreamFunction.functionArn,
     });
 
+    new CfnOutput(this, 'OptimizePromptFunctionArn', {
+      value: api.optimizePromptFunction.functionArn,
+    });
+
     new CfnOutput(this, 'InvokePromptFlowFunctionArn', {
       value: api.invokePromptFlowFunction.functionArn,
     });
@@ -272,10 +276,6 @@ export class GenerativeAiUseCasesStack extends Stack {
       value: JSON.stringify(api.modelIds),
     });
 
-    new CfnOutput(this, 'MultiModalModelIds', {
-      value: JSON.stringify(api.multiModalModelIds),
-    });
-
     new CfnOutput(this, 'ImageGenerateModelIds', {
       value: JSON.stringify(api.imageGenerationModelIds),
     });
@@ -306,5 +306,8 @@ export class GenerativeAiUseCasesStack extends Stack {
 
     this.userPool = auth.userPool;
     this.userPoolClient = auth.client;
+
+    this.exportValue(this.userPool.userPoolId);
+    this.exportValue(this.userPoolClient.userPoolClientId);
   }
 }

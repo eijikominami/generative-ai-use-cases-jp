@@ -12,19 +12,20 @@ type Props = BaseProps & {
   onDelete?: () => void;
 };
 
-const ZoomUpImage: React.FC<Props> = (props) => {
+const ZoomUpVideo: React.FC<Props> = (props) => {
   const [zoom, setZoom] = useState(false);
 
   return (
     <div className={props.className}>
       <div className="group relative cursor-pointer">
-        <img
+        <video
           className={`${
             props.error ? 'border-red-500' : 'border-aws-squid-ink/50'
           } bg-aws-squid-ink/20 rounded border object-cover object-center ${
             props.size === 's' ? 'size-24' : 'size-32'
           }`}
           src={props.src}
+          controls
           onClick={() => {
             setZoom(true);
           }}
@@ -57,11 +58,11 @@ const ZoomUpImage: React.FC<Props> = (props) => {
           onClick={() => {
             setZoom(false);
           }}>
-          <img src={props.src} className="max-h-[90vh]" />
+          <video src={props.src} controls className="max-h-[90vh]" />
         </div>
       )}
     </div>
   );
 };
 
-export default ZoomUpImage;
+export default ZoomUpVideo;

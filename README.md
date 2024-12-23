@@ -107,9 +107,7 @@ Generative AI（生成 AI）は、ビジネスの変革に革新的な可能性�
 
 ## ユースケースビルダー
 
-ユースケースビルダーは、プロンプトテンプレートを自然言語で記述することで独自のユースケースを作成できる機能です。プロンプトテンプレートだけで独自のユースケース画面が自動生成されるため、**コード変更・カスタマイズ作業が一切不要**です。作成したユースケースは、個人利用だけではなく、アプリケーションにログインできる全ユーザーに共有することもできます。
-
-[こちらのデプロイ手順](./docs/DEPLOY_OPTION.md#ユースケースビルダーの有効化)を参考にユースケースビルダーを有効化してください。有効化すると「ビルダーモード」という切り替えスイッチが表示されます。スイッチを ON にすると、ユースケースビルダーの画面に切り替わります。
+ユースケースビルダーは、プロンプトテンプレートを自然言語で記述することで独自のユースケースを作成できる機能です。プロンプトテンプレートだけで独自のユースケース画面が自動生成されるため、**コード変更・カスタマイズ作業が一切不要**です。作成したユースケースは、個人利用だけではなく、アプリケーションにログインできる全ユーザーに共有することもできます。ユースケースビルダーを無効化する場合は、[ユースケースビルダーの設定](./docs/DEPLOY_OPTION.md#ユースケースビルダーの設定)を参照してください。
 
 ## アーキテクチャ
 
@@ -161,6 +159,7 @@ npm run cdk:deploy
     - [Knowledge Bases for Amazon Bedrock エージェントのデプロイ](/docs/DEPLOY_OPTION.md#knowledge-bases-for-amazon-bedrock-エージェントのデプロイ)
   - [PromptFlow チャットユースケースの有効化](/docs/DEPLOY_OPTION.md#promptflow-チャットユースケースの有効化)
   - [映像分析ユースケースの有効化](/docs/DEPLOY_OPTION.md#映像分析ユースケースの有効化)
+  - [プロンプト最適化ツールの有効化](/docs/DEPLOY_OPTION.md#プロンプト最適化ツールの有効化)
 - [ユースケースビルダーの有効化](/docs/DEPLOY_OPTION.md#ユースケースビルダーの有効化)
 - [Amazon Bedrock のモデルを変更する](/docs/DEPLOY_OPTION.md#amazon-bedrock-のモデルを変更する)
   - [us-east-1 (バージニア) の Amazon Bedrock のモデルを利用する例](/docs/DEPLOY_OPTION.md#us-east-1-バージニア-の-amazon-bedrock-のモデルを利用する例)
@@ -190,10 +189,13 @@ npm run cdk:deploy
  - [ブラウザ拡張機能を利用する](/browser-extension/README.md)
 
 ## 料金試算
-[GenU をご利用いただく際の、構成と料金試算例](https://aws.amazon.com/jp/cdp/ai-chatapp/)を公開しております。  
+GenU をご利用いただく際の、構成と料金試算例を公開しております。
 この料金試算例は、Amazon Kendra を活用した RAG チャット機能を有効化する前提となっています。
 セキュリティ強化のための AWS WAF や、ファイルのアップロード機能、Knowledge Base を活用したオプション機能などは含まれていない点にご注意ください。
 従量課金制となっており、実際の料金はご利用内容により変動いたします。
+- [シンプル版 (RAG なし) 試算](https://aws.amazon.com/jp/cdp/ai-chatbot/)
+- [RAG (Amazon Kendra) あり試算](https://aws.amazon.com/jp/cdp/ai-chatapp/)
+- [RAG (Knowledge Base) あり試算](https://aws.amazon.com/jp/cdp/genai-chat-app/)
 
 ## お客様事例
 

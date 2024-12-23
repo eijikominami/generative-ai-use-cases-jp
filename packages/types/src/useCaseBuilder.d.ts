@@ -18,6 +18,8 @@ export type UseCaseContent = {
   description?: string;
   promptTemplate: string;
   inputExamples?: UseCaseInputExample[];
+  fixedModelId?: string;
+  fileUpload?: boolean;
 };
 
 // Table に記録されている内容

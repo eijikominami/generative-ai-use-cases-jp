@@ -44,9 +44,9 @@ export type ExtraData = {
   type: string; // 'image' | 'file'
   name: string;
   source: {
-    type: string; // 'S3'
-    mediaType: string; // file type
-    data: string;
+    type: string; // 'S3' | 'base64'
+    mediaType: string; // mime type (i.e. image/png)
+    data: string; // s3 location for s3, data for base64
   };
 };
 
@@ -58,14 +58,21 @@ export type UploadedFileType = {
   s3Url?: string;
   uploading: boolean;
   deleting?: boolean;
+  errorMessages: string[];
 };
 
 export type FileLimit = {
-  accept: string[];
+  accept: {
+    doc: string[];
+    image: string[];
+    video: string[];
+  };
   maxFileCount: number;
   maxFileSizeMB: number;
   maxImageFileCount: number;
   maxImageFileSizeMB: number;
+  maxVideoFileCount: number;
+  maxVideoFileSizeMB: number;
 };
 
 export type RecordedMessage = PrimaryKey &

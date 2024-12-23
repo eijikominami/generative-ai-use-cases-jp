@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import {
   getItemsFromPlaceholders,
+  getTextFormItemsFromItems,
+  getTextFormUniqueLabels,
   NOLABEL,
 } from '../../src/utils/UseCaseBuilderUtils';
 
@@ -12,6 +14,26 @@ describe('入力タイプを正しくパースできる', () => {
         label: 'xxx',
       },
     ]);
+  });
+
+  test('retrieveKendra', () => {
+    expect(getItemsFromPlaceholders(['{{retrieveKendra:xxx}}'])).toEqual([
+      {
+        inputType: 'retrieveKendra',
+        label: 'xxx',
+      },
+    ]);
+  });
+
+  test('retrieveKnowledgeBase', () => {
+    expect(getItemsFromPlaceholders(['{{retrieveKnowledgeBase:xxx}}'])).toEqual(
+      [
+        {
+          inputType: 'retrieveKnowledgeBase',
+          label: 'xxx',
+        },
+      ]
+    );
   });
 
   test('不正なタイプ', () => {
@@ -103,5 +125,106 @@ describe('複数のラベルを正しくパースできる', () => {
         label: 'yyy',
       },
     ]);
+  });
+
+  test('異なる入力タイプで同じラベルの時正しくパースできる', () => {
+    expect(
+      getItemsFromPlaceholders([
+        '{{text}}',
+        '{{retrieveKendra}}',
+        '{{retrieveKnowledgeBase}}',
+        '{{text:xxx}}',
+        '{{retrieveKendra:xxx}}',
+        '{{retrieveKnowledgeBase:xxx}}',
+      ])
+    ).toEqual([
+      {
+        inputType: 'text',
+        label: NOLABEL,
+      },
+      {
+        inputType: 'retrieveKendra',
+        label: NOLABEL,
+      },
+      {
+        inputType: 'retrieveKnowledgeBase',
+        label: NOLABEL,
+      },
+      {
+        inputType: 'text',
+        label: 'xxx',
+      },
+      {
+        inputType: 'retrieveKendra',
+        label: 'xxx',
+      },
+      {
+        inputType: 'retrieveKnowledgeBase',
+        label: 'xxx',
+      },
+    ]);
+  });
+
+  test('TEXT_FORM_TYPES だけを正しく抽出できる', () => {
+    expect(
+      getTextFormItemsFromItems([
+        {
+          inputType: 'text',
+          label: NOLABEL,
+        },
+        {
+          inputType: 'text',
+          label: 'xxx',
+        },
+        {
+          inputType: 'retrieveKendra',
+          label: NOLABEL,
+        },
+        {
+          inputType: 'retrieveKendra',
+          label: 'xxx',
+        },
+      ])
+    ).toEqual([
+      {
+        inputType: 'text',
+        label: NOLABEL,
+      },
+      {
+        inputType: 'text',
+        label: 'xxx',
+      },
+    ]);
+  });
+
+  test('ユニークな label を抽出できる', () => {
+    expect(
+      getTextFormUniqueLabels([
+        {
+          inputType: 'text',
+          label: NOLABEL,
+        },
+        {
+          inputType: 'text',
+          label: 'xxx',
+        },
+        {
+          inputType: 'form',
+          label: NOLABEL,
+        },
+        {
+          inputType: 'form',
+          label: 'xxx',
+        },
+        {
+          inputType: 'retrieveKendra',
+          label: NOLABEL,
+        },
+        {
+          inputType: 'retrieveKendra',
+          label: 'xxx',
+        },
+      ])
+    ).toEqual([NOLABEL, 'xxx']);
   });
 });

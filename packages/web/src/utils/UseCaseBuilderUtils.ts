@@ -2,7 +2,19 @@
 // 空文字だと DynamoDB に inputExample を挿入した際にエラーになる
 export const NOLABEL = 'NOLABEL';
 
-const SUPPORTED_TYPES: string[] = ['text'];
+export type BuilderItem = {
+  inputType: string;
+  label: string;
+};
+
+export const SUPPORTED_TYPES: string[] = [
+  'text',
+  'form',
+  'retrieveKendra',
+  'retrieveKnowledgeBase',
+];
+
+export const TEXT_FORM_TYPES: string[] = ['text', 'form'];
 
 export const extractPlaceholdersFromPromptTemplate = (
   promptTemplate: string
@@ -10,7 +22,9 @@ export const extractPlaceholdersFromPromptTemplate = (
   return promptTemplate.match(/\{\{[^}]*\}\}/g) ?? [];
 };
 
-export const getItemsFromPlaceholders = (placeholders: string[]) => {
+export const getItemsFromPlaceholders = (
+  placeholders: string[]
+): BuilderItem[] => {
   return (
     placeholders
       .map((match) => {
@@ -30,7 +44,23 @@ export const getItemsFromPlaceholders = (placeholders: string[]) => {
       .filter((item) => SUPPORTED_TYPES.includes(item.inputType))
       .filter(
         (elem, idx, self) =>
-          self.findIndex((e) => e.label === elem.label) === idx
+          self.findIndex(
+            (e) => e.inputType === elem.inputType && e.label === elem.label
+          ) === idx
       ) ?? []
   );
+};
+
+export const getTextFormItemsFromItems = (
+  items: BuilderItem[]
+): BuilderItem[] => {
+  return items.filter((i) => TEXT_FORM_TYPES.includes(i.inputType));
+};
+
+export const getTextFormUniqueLabels = (items: BuilderItem[]): string[] => {
+  return getTextFormItemsFromItems(items)
+    .filter((elem, idx, self) => {
+      return self.findIndex((e) => e.label === elem.label) === idx;
+    })
+    .map((item) => item.label);
 };

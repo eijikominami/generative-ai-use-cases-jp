@@ -1,7 +1,8 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import ButtonSend from './ButtonSend';
 import Textarea from './Textarea';
 import ZoomUpImage from './ZoomUpImage';
+import ZoomUpVideo from './ZoomUpVideo';
 import useChat from '../hooks/useChat';
 import { useLocation } from 'react-router-dom';
 import Button from './Button';
@@ -10,7 +11,6 @@ import {
   PiPaperclip,
   PiSpinnerGap,
 } from 'react-icons/pi';
-
 import useFiles from '../hooks/useFiles';
 import FileCard from './FileCard';
 import { FileLimit } from 'generative-ai-use-cases-jp';
@@ -30,6 +30,7 @@ type Props = {
   disableMarginBottom?: boolean;
   fileUpload?: boolean;
   fileLimit?: FileLimit;
+  accept?: string[];
 } & (
   | {
       hideReset?: false;
@@ -46,33 +47,43 @@ const InputChatContent: React.FC<Props> = (props) => {
   const {
     uploadedFiles,
     uploadFiles,
+    checkFiles,
     deleteUploadedFile,
     uploading,
     errorMessages,
   } = useFiles();
 
+  // Model 変更等で accept が変更された際にエラーメッセージを表示 (自動でファイル削除は行わない)
+  useEffect(() => {
+    if (props.fileLimit && props.accept) {
+      checkFiles(props.fileLimit, props.accept);
+    }
+  }, [checkFiles, props.fileLimit, props.accept]);
+
   const onChangeFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
+    if (files && props.fileLimit && props.accept) {
       // ファイルを反映しアップロード
-      uploadFiles(Array.from(files), props?.fileLimit);
+      uploadFiles(Array.from(files), props.fileLimit, props.accept);
     }
   };
 
   const deleteFile = useCallback(
     (fileUrl: string) => {
-      deleteUploadedFile(fileUrl);
+      if (props.fileLimit && props.accept) {
+        deleteUploadedFile(fileUrl, props.fileLimit, props.accept);
+      }
     },
-    [deleteUploadedFile]
+    [deleteUploadedFile, props.fileLimit, props.accept]
   );
   const handlePaste = async (pasteEvent: React.ClipboardEvent) => {
     const fileList = pasteEvent.clipboardData.items || [];
     const files = Array.from(fileList)
       .filter((file) => file.kind === 'file')
       .map((file) => file.getAsFile() as File);
-    if (files.length > 0) {
+    if (files.length > 0 && props.fileLimit && props.accept) {
       // ファイルをアップロード
-      uploadFiles(Array.from(files), props.fileLimit);
+      uploadFiles(Array.from(files), props.fileLimit, props.accept);
       // ファイルの場合ファイル名もペーストされるためデフォルトの挙動を止める
       pasteEvent.preventDefault();
     }
@@ -84,8 +95,13 @@ const InputChatContent: React.FC<Props> = (props) => {
   }, [chatLoading, props.loading]);
 
   const disabledSend = useMemo(() => {
-    return props.content === '' || props.disabled || uploading;
-  }, [props.content, props.disabled, uploading]);
+    return (
+      props.content === '' ||
+      props.disabled ||
+      uploading ||
+      errorMessages.length > 0
+    );
+  }, [props.content, props.disabled, uploading, errorMessages]);
 
   return (
     <div
@@ -102,31 +118,53 @@ const InputChatContent: React.FC<Props> = (props) => {
           props.disableMarginBottom ? '' : 'mb-7'
         }`}>
         <div className="flex w-full flex-col">
-          {props.fileUpload && uploadedFiles.length > 0 && (
+          {uploadedFiles.length > 0 && (
             <div className="m-2 flex flex-wrap gap-2">
-              {uploadedFiles.map((uploadedFile, idx) =>
-                uploadedFile.type === 'image' ? (
-                  <ZoomUpImage
-                    key={idx}
-                    src={uploadedFile.base64EncodedData}
-                    loading={uploadedFile.uploading}
-                    size="s"
-                    onDelete={() => {
-                      deleteFile(uploadedFile.s3Url ?? '');
-                    }}
-                  />
-                ) : (
-                  <FileCard
-                    key={idx}
-                    filename={uploadedFile.name}
-                    loading={uploadedFile.uploading}
-                    size="s"
-                    onDelete={() => {
-                      deleteFile(uploadedFile.s3Url ?? '');
-                    }}
-                  />
-                )
-              )}
+              {uploadedFiles.map((uploadedFile, idx) => {
+                if (uploadedFile.type === 'image') {
+                  return (
+                    <ZoomUpImage
+                      key={idx}
+                      src={uploadedFile.base64EncodedData}
+                      loading={uploadedFile.uploading}
+                      deleting={uploadedFile.deleting}
+                      size="s"
+                      error={uploadedFile.errorMessages.length > 0}
+                      onDelete={() => {
+                        deleteFile(uploadedFile.s3Url ?? '');
+                      }}
+                    />
+                  );
+                } else if (uploadedFile.type === 'video') {
+                  return (
+                    <ZoomUpVideo
+                      key={idx}
+                      src={uploadedFile.base64EncodedData}
+                      loading={uploadedFile.uploading}
+                      deleting={uploadedFile.deleting}
+                      size="s"
+                      error={uploadedFile.errorMessages.length > 0}
+                      onDelete={() => {
+                        deleteFile(uploadedFile.s3Url ?? '');
+                      }}
+                    />
+                  );
+                } else {
+                  return (
+                    <FileCard
+                      key={idx}
+                      filename={uploadedFile.name}
+                      loading={uploadedFile.uploading}
+                      deleting={uploadedFile.deleting}
+                      size="s"
+                      error={uploadedFile.errorMessages.length > 0}
+                      onDelete={() => {
+                        deleteFile(uploadedFile.s3Url ?? '');
+                      }}
+                    />
+                  );
+                }
+              })}
             </div>
           )}
           {errorMessages.length > 0 && (
@@ -156,7 +194,7 @@ const InputChatContent: React.FC<Props> = (props) => {
                 hidden
                 onChange={onChangeFiles}
                 type="file"
-                accept={props.fileLimit?.accept?.join(',')}
+                accept={props.accept?.join(',')}
                 multiple
                 value={[]}
               />
