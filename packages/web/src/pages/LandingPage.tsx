@@ -16,6 +16,7 @@ import {
   PiRobot,
   PiVideoCamera,
   PiFlowArrow,
+  PiTreeStructure,
 } from 'react-icons/pi';
 import AwsIcon from '../assets/aws.svg?react';
 import useInterUseCases from '../hooks/useInterUseCases';
@@ -31,6 +32,7 @@ import {
   TranslatePageQueryParams,
   WebContentPageQueryParams,
   VideoAnalyzerPageQueryParams,
+  DiagramPageQueryParams,
 } from '../@types/navigate';
 import queryString from 'query-string';
 import { MODELS } from '../hooks/useModel';
@@ -40,15 +42,15 @@ const ragKnowledgeBaseEnabled: boolean =
   import.meta.env.VITE_APP_RAG_KNOWLEDGE_BASE_ENABLED === 'true';
 const agentEnabled: boolean = import.meta.env.VITE_APP_AGENT_ENABLED === 'true';
 const { visionEnabled } = MODELS;
-const getPromptFlows = () => {
+const getFlows = () => {
   try {
-    return JSON.parse(import.meta.env.VITE_APP_PROMPT_FLOWS);
+    return JSON.parse(import.meta.env.VITE_APP_FLOWS);
   } catch (e) {
     return [];
   }
 };
-const promptFlows = getPromptFlows();
-const promptFlowChatEnabled: boolean = promptFlows.length > 0;
+const flows = getFlows();
+const flowChatEnabled: boolean = flows.length > 0;
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -142,6 +144,13 @@ const LandingPage: React.FC = () => {
         '映っているものを説明してください。もし映っているものに文字が書かれている場合はそれも読んでください。',
     };
     navigate(`/video?${queryString.stringify(params)}`);
+  };
+
+  const demoGenerateDiagram = () => {
+    const params: DiagramPageQueryParams = {
+      content: `会社の一般的な経費生産フローを色つきで図示してください。`,
+    };
+    navigate(`/diagram?${queryString.stringify(params)}`);
   };
 
   const demoBlog = () => {
@@ -260,8 +269,8 @@ const LandingPage: React.FC = () => {
     ]);
   };
 
-  const demoPromptFlowChat = () => {
-    navigate(`/prompt-flow-chat`);
+  const demoFlowChat = () => {
+    navigate(`/flow-chat`);
   };
 
   return (
@@ -272,7 +281,7 @@ const LandingPage: React.FC = () => {
       </div>
 
       <div className="mx-3 mb-6 mt-5 flex flex-col items-center justify-center text-xs lg:flex-row">
-        <Button className="mb-2 mr-0 lg:mb-0 lg:mr-2" onClick={() => {}}>
+        <Button className="mb-2 mr-0 lg:mb-0 lg:mr-2" onClick={demoFlowChat}>
           試す
         </Button>
         をクリックすることで、各ユースケースを体験できます。
@@ -315,12 +324,12 @@ const LandingPage: React.FC = () => {
             description="Agent チャットユースケースでは Agents for Amazon Bedrock を利用してアクションを実行させたり、Knowledge Bases for Amazon Bedrock のベクトルデータベースを参照することが可能です。"
           />
         )}
-        {promptFlowChatEnabled && (
+        {flowChatEnabled && (
           <CardDemo
-            label="Prompt Flow チャット"
-            onClickDemo={demoPromptFlowChat}
+            label="Flow チャット"
+            onClickDemo={demoFlowChat}
             icon={<PiFlowArrow />}
-            description="Prompt Flow を使用して、複数のステップを持つ対話型チャットフローを作成します。ユーザーの入力に基づいて、動的に次のステップを決定し、より複雑な対話シナリオを実現します。"
+            description="Flow を使用して、複数のステップを持つ対話型チャットフローを作成します。ユーザーの入力に基づいて、動的に次のステップを決定し、より複雑な対話シナリオを実現します。"
           />
         )}
         <CardDemo
@@ -367,6 +376,12 @@ const LandingPage: React.FC = () => {
             description="マルチモーダルモデルによってテキストのみではなく、画像を入力することが可能になりました。こちらの機能では、映像の画像フレームとテキストを入力として LLM に分析を依頼します。"
           />
         )}
+        <CardDemo
+          label="ダイアグラム生成"
+          onClickDemo={demoGenerateDiagram}
+          icon={<PiTreeStructure />}
+          description="自然言語による説明、文書やコードから、フローチャート、シーケンス図、マインドマップなどの様々な図を自動的に作成できます。システム設計、ビジネスフロー、プロジェクト計画などの複雑な関係性を、視覚的に表現し理解を効率化します。"
+        />
       </div>
 
       <h1 className="mb-6 mt-12 flex justify-center text-2xl font-bold">

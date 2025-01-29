@@ -5,6 +5,7 @@ import * as bedrock from 'aws-cdk-lib/aws-bedrock';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { StackInput } from './stack-input';
 
 const app = new cdk.App();
 
@@ -74,7 +75,52 @@ EPS：$1.25
 
 const EMBEDDING_MODELS = Object.keys(MODEL_VECTOR_MAPPING);
 
-interface RagKnowledgeBaseStackProps extends StackProps {
+interface OpenSearchServerlessIndexProps {
+  collectionId: string;
+  vectorIndexName: string;
+  vectorField: string;
+  metadataField: string;
+  textField: string;
+  vectorDimension: string;
+}
+
+class OpenSearchServerlessIndex extends Construct {
+  public readonly customResourceHandler: lambda.IFunction;
+  public readonly customResource: cdk.CustomResource;
+
+  constructor(
+    scope: Construct,
+    id: string,
+    props: OpenSearchServerlessIndexProps
+  ) {
+    super(scope, id);
+
+    const customResourceHandler = new lambda.SingletonFunction(
+      this,
+      'OpenSearchServerlessIndex',
+      {
+        runtime: lambda.Runtime.NODEJS_LATEST,
+        code: lambda.Code.fromAsset('custom-resources'),
+        handler: 'oss-index.handler',
+        uuid: UUID,
+        lambdaPurpose: 'OpenSearchServerlessIndex',
+        timeout: cdk.Duration.minutes(15),
+      }
+    );
+
+    const customResource = new cdk.CustomResource(this, 'CustomResource', {
+      serviceToken: customResourceHandler.functionArn,
+      resourceType: 'Custom::OssIndex',
+      properties: props,
+    });
+
+    this.customResourceHandler = customResourceHandler;
+    this.customResource = customResource;
+  }
+}
+
+export interface RagKnowledgeBaseStackProps extends StackProps {
+  params: StackInput;
   collectionName?: string;
   vectorIndexName?: string;
   vectorField?: string;
@@ -89,8 +135,13 @@ export class RagKnowledgeBaseStack extends Stack {
   constructor(scope: Construct, id: string, props: RagKnowledgeBaseStackProps) {
     super(scope, id, props);
 
-    const embeddingModelId: string | null | undefined =
-      this.node.tryGetContext('embeddingModelId')!;
+    const {
+      env,
+      embeddingModelId,
+      ragKnowledgeBaseStandbyReplicas,
+      ragKnowledgeBaseAdvancedParsing,
+      ragKnowledgeBaseAdvancedParsingModelId,
+    } = props.params;
 
     if (typeof embeddingModelId !== 'string') {
       throw new Error(
@@ -104,18 +155,18 @@ export class RagKnowledgeBaseStack extends Stack {
       );
     }
 
-    const collectionName = props.collectionName ?? 'generative-ai-use-cases-jp';
+    const collectionName =
+      props.collectionName ?? `generative-ai-use-cases-jp${env.toLowerCase()}`;
+    const vectorIndexName =
+      props.vectorIndexName ?? 'bedrock-knowledge-base-default';
+    const vectorField =
+      props.vectorField ?? 'bedrock-knowledge-base-default-vector';
+    const textField = props.textField ?? 'AMAZON_BEDROCK_TEXT_CHUNK';
+    const metadataField = props.metadataField ?? 'AMAZON_BEDROCK_METADATA';
 
     const knowledgeBaseRole = new iam.Role(this, 'KnowledgeBaseRole', {
       assumedBy: new iam.ServicePrincipal('bedrock.amazonaws.com'),
     });
-
-    const ragKnowledgeBaseAdvancedParsing = this.node.tryGetContext(
-      'ragKnowledgeBaseAdvancedParsing'
-    )!;
-
-    const ragKnowledgeBaseAdvancedParsingModelId: string | null | undefined =
-      this.node.tryGetContext('ragKnowledgeBaseAdvancedParsingModelId')!;
 
     if (
       ragKnowledgeBaseAdvancedParsing &&
@@ -125,6 +176,109 @@ export class RagKnowledgeBaseStack extends Stack {
         'Knowledge Base RAG の Advanced Parsing が有効ですが、ragKnowledgeBaseAdvancedParsingModelId が指定されていないか、文字列ではありません'
       );
     }
+
+    const collection = new oss.CfnCollection(this, 'Collection', {
+      name: collectionName,
+      description: 'GenU Collection',
+      type: 'VECTORSEARCH',
+      standbyReplicas: ragKnowledgeBaseStandbyReplicas ? 'ENABLED' : 'DISABLED',
+    });
+
+    const ossIndex = new OpenSearchServerlessIndex(this, 'OssIndex', {
+      collectionId: collection.ref,
+      vectorIndexName,
+      vectorField,
+      textField,
+      metadataField,
+      vectorDimension: MODEL_VECTOR_MAPPING[embeddingModelId],
+    });
+
+    ossIndex.customResourceHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        resources: [cdk.Token.asString(collection.getAtt('Arn'))],
+        actions: ['aoss:APIAccessAll'],
+      })
+    );
+
+    const accessPolicy = new oss.CfnAccessPolicy(this, 'AccessPolicy', {
+      name: collectionName,
+      policy: JSON.stringify([
+        {
+          Rules: [
+            {
+              Resource: [`collection/${collectionName}`],
+              Permission: [
+                'aoss:DescribeCollectionItems',
+                'aoss:CreateCollectionItems',
+                'aoss:UpdateCollectionItems',
+              ],
+              ResourceType: 'collection',
+            },
+            {
+              Resource: [`index/${collectionName}/*`],
+              Permission: [
+                'aoss:UpdateIndex',
+                'aoss:DescribeIndex',
+                'aoss:ReadDocument',
+                'aoss:WriteDocument',
+                'aoss:CreateIndex',
+                'aoss:DeleteIndex',
+              ],
+              ResourceType: 'index',
+            },
+          ],
+          Principal: [
+            knowledgeBaseRole.roleArn,
+            ossIndex.customResourceHandler.role?.roleArn,
+          ],
+          Description: '',
+        },
+      ]),
+      type: 'data',
+    });
+
+    const networkPolicy = new oss.CfnSecurityPolicy(this, 'NetworkPolicy', {
+      name: collectionName,
+      policy: JSON.stringify([
+        {
+          Rules: [
+            {
+              Resource: [`collection/${collectionName}`],
+              ResourceType: 'collection',
+            },
+            {
+              Resource: [`collection/${collectionName}`],
+              ResourceType: 'dashboard',
+            },
+          ],
+          AllowFromPublic: true,
+        },
+      ]),
+      type: 'network',
+    });
+
+    const encryptionPolicy = new oss.CfnSecurityPolicy(
+      this,
+      'EncryptionPolicy',
+      {
+        name: collectionName,
+        policy: JSON.stringify({
+          Rules: [
+            {
+              Resource: [`collection/${collectionName}`],
+              ResourceType: 'collection',
+            },
+          ],
+          AWSOwnedKey: true,
+        }),
+        type: 'encryption',
+      }
+    );
+
+    collection.node.addDependency(accessPolicy);
+    collection.node.addDependency(networkPolicy);
+    collection.node.addDependency(encryptionPolicy);
 
     const accessLogsBucket = new s3.Bucket(this, 'DataSourceAccessLogsBucket', {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
